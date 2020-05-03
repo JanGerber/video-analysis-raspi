@@ -1,7 +1,11 @@
+from video_analysis_raspi.model.Settings import Settings
+
+
 class SettingsService:
+    settings: Settings
 
     def __init__(self):
-        pass
+        self.settings = Settings()
 
     def get_settings(self):
         pass
