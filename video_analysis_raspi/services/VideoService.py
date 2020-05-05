@@ -1,5 +1,10 @@
+import json
 from io import BytesIO
 
+import requests
+from requests_toolbelt.multipart.encoder import MultipartEncoder
+
+from video_analysis_raspi.exceptions.VideoRecordingError import VideoRecordingError
 from video_analysis_raspi.model import Camera
 from video_analysis_raspi.model.VideoStartRequest import VideoStartRequest
 from video_analysis_raspi.services.SettingsService import SettingsService
@@ -10,7 +15,7 @@ class VideoService:
     camera: Camera
     stream_output: BytesIO = BytesIO()
     settings_service: SettingsService
-    store_file: bool = True
+    request: VideoStartRequest
 
     def __init__(self, camera, settings_service: SettingsService):
         self.camera = camera
@@ -23,7 +28,6 @@ class VideoService:
         if self.mutex:
             return "Video already stared"
         self.mutex = True
-        self.store_file = request.store
         self.camera.start_recording(self.settings_service.settings.video_filename,
                                     format=self.settings_service.settings.video_format,
                                     splitter_port=1)
@@ -31,14 +35,36 @@ class VideoService:
             self.camera.wait_recording(request.duration)
             self.camera.stop_recording(splitter_port=1)
             if request.store:
-                self.upload_file()
+                self.upload_file(request)
             self.mutex = False
             return "Video started and stoped"
-
+        else:
+            self.request = request
         return "Video started!"
 
-    def upload_file(self):
-        pass
+    def upload_file(self, request):
+        print("start upload")
+        metadata = {
+            'groupId': request.groupId,
+            'duration': request.duration,
+            'startTime': request.start_time
+        }
+        m = MultipartEncoder(
+            fields={'file': ('video.h264', open(self.settings_service.settings.video_filename, 'rb'), 'video/h264'),
+                    'metadata': ('metadata', json.dumps(metadata), 'application/json')}
+        )
+
+        url = self.settings_service.settings.server_url_base + self.settings_service.settings.server_url_file_upload
+        headers = self.settings_service.settings.server_auth_header
+        headers.update({'Content-Type': m.content_type})
+        print("Headers", headers)
+        r = requests.post(url,
+                          data=m,
+                          headers=headers)
+        print(r.request.headers)
+        print(r.status_code, r.text)
+        if r.status_code != 200:
+            raise VideoRecordingError(msg="Something went wrong during upload")
 
     def stop_recording(self):
         if not self.mutex:

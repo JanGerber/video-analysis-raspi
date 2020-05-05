@@ -1,3 +1,6 @@
+import logging
+import sys
+
 from flask import Flask, request, render_template, Response
 from picamera import PiCamera
 
@@ -7,13 +10,17 @@ from video_analysis_raspi.services.PictureService import PictureService
 from video_analysis_raspi.services.SettingsService import SettingsService
 from video_analysis_raspi.services.VideoService import VideoService
 
+logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(asctime)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
 app = Flask(__name__)
 
 camera = PiCamera()
-settings_service = SettingsService()
+settings_service = SettingsService(sys.argv[1:])
 
 video_service = VideoService(camera, settings_service)
 picture_service = PictureService(camera, settings_service)
+
 
 
 @app.route('/')
@@ -36,7 +43,7 @@ def post_start_video():
         result = video_service.start_recording(data)
         return result, 202
     except VideoRecordingError as e:
-        return e, 500
+        return repr(e), 500
 
 
 @app.route('/api/v1/video/stop', methods=['POST'])
