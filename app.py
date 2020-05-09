@@ -1,23 +1,49 @@
-from flask import Flask
-from picamera import PiCamera
+import logging
+import sys
 
+from flask import Flask, request, render_template, Response
+
+from video_analysis_raspi.exceptions.VideoRecordingError import VideoRecordingError
+from video_analysis_raspi.model.Camera import Camera
+from video_analysis_raspi.model.VideoStartRequest import VideoStartRequest
 from video_analysis_raspi.services.PictureService import PictureService
 from video_analysis_raspi.services.SettingsService import SettingsService
 from video_analysis_raspi.services.VideoService import VideoService
 
+logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(asctime)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
 app = Flask(__name__)
 
-camera = PiCamera()
-settings_service = SettingsService()
+camera = Camera()
+settings_service = SettingsService(sys.argv[1:])
 
 video_service = VideoService(camera, settings_service)
 picture_service = PictureService(camera, settings_service)
 
 
+
+@app.route('/')
+def index():
+    """Video streaming home page."""
+    return render_template('index.html')
+
+
+@app.route('/video_feed')
+def video_feed():
+    """Video streaming route. Put this in the src attribute of an img tag."""
+    return Response(video_service.gen(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
 @app.route('/api/v1/video/start', methods=['POST'])
 def post_start_video():
-    video_service.start_recording()
-    return 'Video started'
+    data = VideoStartRequest(request.data)
+    try:
+        result = video_service.start_recording(data)
+        return result, 202
+    except VideoRecordingError as e:
+        return repr(e), 500
 
 
 @app.route('/api/v1/video/stop', methods=['POST'])
