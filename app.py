@@ -5,6 +5,7 @@ from flask import Flask, request, render_template, Response
 
 from video_analysis_raspi.exceptions.VideoRecordingError import VideoRecordingError
 from video_analysis_raspi.model.Camera import Camera
+from video_analysis_raspi.model.PictureStartRequest import PictureStartRequest
 from video_analysis_raspi.model.VideoStartRequest import VideoStartRequest
 from video_analysis_raspi.services.PictureService import PictureService
 from video_analysis_raspi.services.SettingsService import SettingsService
@@ -54,8 +55,12 @@ def post_stop_video():
 
 @app.route('/api/v1/picture', methods=['POST'])
 def post_picture_start():
-    picture_service.take_pictures()
-    return 'Hello World!'
+    data = PictureStartRequest(request.data)
+    try:
+        result = picture_service.take_pictures(data)
+        return result, 202
+    except VideoRecordingError as e:
+        return repr(e), 500
 
 
 @app.route('/api/v1/setting', methods=['GET'])
