@@ -14,14 +14,16 @@ class SettingsService:
     def __init__(self, cmd_argv):
         self.settings = Settings()
         try:
-            opts, args = getopt.getopt(cmd_argv, "hs:u:p:", ["server=", "username=", "password="])
+            opts, args = getopt.getopt(cmd_argv, "hi:s:u:p:", ["id=", "server=", "username=", "password="])
         except getopt.GetoptError:
-            print('app.py -s <server_address> -u <username_server> -p <password_server>')
+            print('app.py -i <id_raspi> -s <server_address> -u <username_server> -p <password_server>')
             sys.exit(2)
         for opt, arg in opts:
             if opt == '-h':
-                print('app.py -s <server_address> -u <username_server> -p <password_server>')
+                print('app.py -i <id_raspi> -s <server_address> -u <username_server> -p <password_server>')
                 sys.exit()
+            elif opt in ("-i", "--id"):
+                self.settings.raspi_uuid = arg
             elif opt in ("-s", "--server"):
                 self.settings.server_url_base = arg
             elif opt in ("-u", "--username"):

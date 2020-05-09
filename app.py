@@ -3,11 +3,12 @@ import sys
 
 from flask import Flask, request, render_template, Response
 
+from video_analysis_raspi.exceptions.ImageTakingError import ImageTakingError
 from video_analysis_raspi.exceptions.VideoRecordingError import VideoRecordingError
 from video_analysis_raspi.model.Camera import Camera
-from video_analysis_raspi.model.PictureStartRequest import PictureStartRequest
+from video_analysis_raspi.model.ImageStartRequest import ImageStartRequest
 from video_analysis_raspi.model.VideoStartRequest import VideoStartRequest
-from video_analysis_raspi.services.PictureService import PictureService
+from video_analysis_raspi.services.ImageService import ImageService
 from video_analysis_raspi.services.SettingsService import SettingsService
 from video_analysis_raspi.services.VideoService import VideoService
 
@@ -20,7 +21,7 @@ camera = Camera()
 settings_service = SettingsService(sys.argv[1:])
 
 video_service = VideoService(camera, settings_service)
-picture_service = PictureService(camera, settings_service)
+picture_service = ImageService(camera, settings_service)
 
 
 
@@ -55,11 +56,11 @@ def post_stop_video():
 
 @app.route('/api/v1/picture', methods=['POST'])
 def post_picture_start():
-    data = PictureStartRequest(request.data)
+    data = ImageStartRequest(request.data)
     try:
         result = picture_service.take_pictures(data)
-        return result, 202
-    except VideoRecordingError as e:
+        return result, 200
+    except ImageTakingError as e:
         return repr(e), 500
 
 

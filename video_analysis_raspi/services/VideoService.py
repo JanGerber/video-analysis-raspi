@@ -55,6 +55,7 @@ class VideoService:
 
     def upload_file(self, request):
         metadata = {
+            'idRaspi': self.settings_service.settings.raspi_uuid,
             'groupId': request.groupId,
             'duration': request.duration,
             'startTime': request.start_time,
@@ -68,7 +69,7 @@ class VideoService:
                     'metadata': ('metadata', json.dumps(metadata), 'application/json')}
         )
 
-        url = self.settings_service.settings.server_url_base + self.settings_service.settings.server_url_file_upload
+        url = self.settings_service.settings.server_url_base + self.settings_service.settings.server_url_video_file_upload
         headers = self.settings_service.settings.server_auth_header
         headers.update({'Content-Type': m.content_type})
         r = requests.post(url,

@@ -2,7 +2,7 @@ import datetime
 import json
 
 
-class PictureStartRequest:
+class ImageStartRequest:
     store: bool = False
     num_images: int = 1
     start_time: datetime
