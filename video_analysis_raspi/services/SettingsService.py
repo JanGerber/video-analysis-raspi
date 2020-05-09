@@ -1,6 +1,7 @@
 import getopt
 import logging
 import sys
+import time
 
 import requests
 
@@ -45,10 +46,19 @@ class SettingsService:
             'username': self.settings.server_user,
             'password': self.settings.server_pwd
         }
-        response = requests.post(url_login, json=login_data)
-        if response.ok:
-            logging.info("Log-in to server was successful")
-        else:
-            logging.warning("Could not connect to server --> log in failed")
-        self.settings.server_jwt = response.json()['jwt']
-        self.settings.server_auth_header = {'Authorization': 'Bearer {}'.format(self.settings.server_jwt)}
+        while True:
+            try:
+                response = requests.post(url_login, json=login_data)
+            except Exception as nce:
+                logging.warning("Could not connect to server: {}".format(nce))
+                logging.info("Try to reconnect in 30s ....")
+                time.sleep(30)
+                continue
+
+            if response.ok:
+                logging.info("Log-in to server was successful")
+                self.settings.server_jwt = response.json()['jwt']
+                self.settings.server_auth_header = {'Authorization': 'Bearer {}'.format(self.settings.server_jwt)}
+                break
+            else:
+                logging.warning("Could not connect to server --> log in failed")

@@ -6,7 +6,7 @@ class VideoStartRequest:
     store: bool = False
     stream: bool = False
     duration: int = 20
-    start_time: datetime = datetime.datetime.now()
+    start_time: datetime
     groupId: str = ""
 
     def __init__(self, j):
